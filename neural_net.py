@@ -1,4 +1,22 @@
 import numpy as np
+from random import shuffle
+
+def sigmoid(Z):
+    return 1/(1 + np.exp(-Z))
+
+def relu(Z):
+    return np.maximum(0,Z)
+
+def dsigmoid(Z):
+    sig = sigmoid(Z)
+    return sig*(1-sig)
+
+def drelu(Z):
+     Z_ = np.copy(Z)
+     Z_[Z_ > 0] = 1
+     Z_[Z_ <= 0] = 0
+     return Z
+
 
 class NeuralNetwork:
     functions = {'relu': relu, 'sigmoid': sigmoid}
@@ -17,8 +35,8 @@ class NeuralNetwork:
 
     def init_weights(self):
         input_sizes = self.sizes[1:]
-        output_sizes = self.sizes[:1]
-        weight_dims = zip(output_sizes, input_sizes)
+        output_sizes = self.sizes[:-1]
+        weight_dims = list(zip(output_sizes, input_sizes))
         weights = [np.random.randn(r,c) for r,c in weight_dims]
         #normalize variance by size of inputs
         weights = [W / W.shape[1]**(0.5) for W in weights]
@@ -42,24 +60,20 @@ class NeuralNetwork:
             self.cache['Z_{}'.format(i)] = Z
         return A
 
-    def train(self, X, y):
+    def update_batch(self, mini_batch):
         pass
 
-   # def sigmoid(self, Z):
-   #     return 1/(1 + np.exp(-Z))
-
-   # def relu(self, Z):
-   #     return np.maximum(0,Z)
-
-   # def dsigmoid(self, Z):
-   #     sig = sigmoid(Z)
-   #     return sig*(1-sig)
-
-   # def drelu(self, Z):
-   #     Z_ = np.copy(Z)
-   #     Z_[Z_ > 0] = 1
-   #     Z_[Z_ <= 0] = 0
-   #     return Z
+    def train(self, training_data, epochs, batch_size):
+        #training data list of pairs (x,y) where x is a training input, y the target output
+        for i in range(epochs):
+            shuffle(training_data)
+            #num samples
+            n = len(training_data)
+            for j in range(0, n, batch_size):
+                minibatch = training_data[j, j + batch_size]
+                self.update_batch(mini_batch)
+            #ToDo:
+            #Print update on Epochs
 
    # def softmax(self, Z, stable=True):
    #     #equivalent to a multiclass logistic function
@@ -76,7 +90,5 @@ class NeuralNetwork:
    # def cross_entropy(self, X, y):
    #     #assumes y is one-hot encoded
    #     pass
-O#A
-
                             
 
