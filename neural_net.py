@@ -18,6 +18,15 @@ def drelu(Z):
      return Z
 
 
+#this would be like Mean Square Error but it's for a *single* observation
+
+def quadratic_cost(y, y_hat):
+    #calculate squared error for a single observation (y) and predictor (y_hat_
+    return 0.5 * (y - y_hat)**2
+
+def d_quadratic_cost(y, y_hat):
+     return (y_hat - y)
+
 class NeuralNetwork:
     functions = {'relu': relu, 'sigmoid': sigmoid}
     fprimes = {'relu': drelu, 'sigmoid': dsigmoid} 
@@ -60,20 +69,50 @@ class NeuralNetwork:
             self.cache['Z_{}'.format(i)] = Z
         return A
 
-    def update_batch(self, mini_batch):
-        pass
+    def update_batch(self, mini_batch, learning_rate):
+        m = len(mini_batch)
+        eta = learning_rate
+        #Sum the cost function gradient (w.r.t weights, biases) for each 
+        #data point in the mini-batch
+        sum_del_weights = [np.zeros(W.shape) for W in self.weights]
+        sum_del_biases = [np.zeros(b.shape) for b in self.biases]
+        #FOOL we're going to do a ~vectorized~ approach 
+        #bwahahahahahahahaha
+        print(mini_batch[0].shape, mini_batch[1].shape)
 
-    def train(self, training_data, epochs, batch_size):
+#        for x_j, y_j in mini_batch:
+#            del_weights, del_biases = self.backpropagate(x_j,y_j)
+#            sum_del_weights += del_weights
+#            sum_del_biases += del_biases
+#
+#        for k in range(len(self.sizes) - 1):
+#            del_weights
+#            self.weights[k] -= (eta/m) * sum_del_weights[k]
+#            self.biases[k] -= (eta/m) * sum_del_biases[k]
+#            print("{}".format(k))
+    def train(self, training_data, epochs, batch_size, learning_rate=0.03):
         #training data list of pairs (x,y) where x is a training input, y the target output
         for i in range(epochs):
             shuffle(training_data)
-            #num samples
             n = len(training_data)
             for j in range(0, n, batch_size):
-                minibatch = training_data[j, j + batch_size]
-                self.update_batch(mini_batch)
+                mini_batch = training_data[j: j + batch_size]
+                self.update_batch(mini_batch, learning_rate)
+                break       
+                print("batch head: {}".format(j))
             #ToDo:
             #Print update on Epochs
+            #i guess we could calculate 
+
+    def backpropagate(self, x, y):
+        del_weight = [np.zeros(W.shape) for W in self.weights]
+        del_bias = [np.zeros(b.shape) for b in self.biases]
+        #set 0th activation 
+        activated = x
+
+        return del_weight, del_bias
+
+
 
    # def softmax(self, Z, stable=True):
    #     #equivalent to a multiclass logistic function

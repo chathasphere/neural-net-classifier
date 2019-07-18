@@ -35,3 +35,7 @@ def test():
     nn = neural_net.NeuralNetwork([64,15,10])
     #let's give it a whirl
     nn.train(train, epochs = 1, batch_size = 100)
+    
+
+if __name__ == "__main__":
+    test()
