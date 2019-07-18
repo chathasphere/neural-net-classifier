@@ -23,8 +23,8 @@ def transform_data(X,y):
     X_train, X_test = X[train_idx,:], X[test_idx,:]
     Y_train, Y_test = Y[train_idx,:], Y[test_idx,:]
     #zip
-    training_data = list(zip(X_train, Y_train))
-    test_data = list(zip(X_test, Y_test))
+    training_data = (X_train, Y_train)
+    test_data = (X_test, Y_test)
     return training_data, test_data
 
 def test():

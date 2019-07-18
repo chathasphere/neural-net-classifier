@@ -1,5 +1,5 @@
 import numpy as np
-from random import shuffle
+import pdb
 
 def sigmoid(Z):
     return 1/(1 + np.exp(-Z))
@@ -27,15 +27,17 @@ def quadratic_cost(y, y_hat):
 def d_quadratic_cost(y, y_hat):
      return (y_hat - y)
 
+class TrainingError(Exception):
+    pass
+
 class NeuralNetwork:
     functions = {'relu': relu, 'sigmoid': sigmoid}
     fprimes = {'relu': drelu, 'sigmoid': dsigmoid} 
     def __init__(self, sizes, activations=None):
         self.sizes = sizes
-        self.cache = {}
         self.weights = self.init_weights()
         if activations is None:
-            activations = ["relu" for i in range(1, len(sizes))] + ["sigmoid"]
+            self.activations = ["relu" for i in range(1, len(sizes))] + ["sigmoid"]
         else:
             self.activations = activations
         #no bias needed for first layer
@@ -43,10 +45,12 @@ class NeuralNetwork:
         #self.lr = 0.003
 
     def init_weights(self):
-        input_sizes = self.sizes[1:]
-        output_sizes = self.sizes[:-1]
+        input_sizes = self.sizes[:-1]
+        output_sizes = self.sizes[1:]
         weight_dims = list(zip(output_sizes, input_sizes))
-        weights = [np.random.randn(r,c) for r,c in weight_dims]
+        #at layer l, weight[j][k] is the weight from the 
+        # kth neuron in the layer l-1 to the jth neuron in layer l
+        weights = [np.random.randn(j,k) for j,k in weight_dims]
         #normalize variance by size of inputs
         weights = [W / W.shape[1]**(0.5) for W in weights]
         return weights
@@ -56,61 +60,71 @@ class NeuralNetwork:
         W = self.weights[layer_number]
         b = self.biases[layer_number]
         Z = np.dot(W, A) + b
-        activation_fn = functions[activations[layer_number]]
-        A = activation(Z)
+        activate = self.functions[self.activations[layer_number]]
+        A = activate(Z)
         return A,Z
 
-    def feed_forward(self, X):
-        A = X
-        for i in range(len(self.layers)):
-            A, Z = self.forward_prop_layer(i, A)
-	    #cache outputs for backprop
-            self.cache['A_{}'.format(i)] = A
-            self.cache['Z_{}'.format(i)] = Z
-        return A
-
-    def update_batch(self, mini_batch, learning_rate):
-        m = len(mini_batch)
+    def update_batch(self, X, Y, learning_rate):
+        #X,Y are mini batches of training X and Y
+        m = X.shape[0]
         eta = learning_rate
         #Sum the cost function gradient (w.r.t weights, biases) for each 
         #data point in the mini-batch
-        sum_del_weights = [np.zeros(W.shape) for W in self.weights]
-        sum_del_biases = [np.zeros(b.shape) for b in self.biases]
-        #FOOL we're going to do a ~vectorized~ approach 
-        #bwahahahahahahahaha
-        print(mini_batch[0].shape, mini_batch[1].shape)
+        #loop through non-input layers
+        # i am skeptical this is gonna work
+        del_weights, del_biases = self.backpropagate(X,Y,m)
+        print(del_weights.shape, del_biases.shape)
+        for l in range(len(self.sizes) - 1):
+            self.weights[l] -= (eta/m) * np.sum(del_weights, axis=0)[l]
+            self.biases[l] -= (eta/m) * np.sum(del_biases, axis=0)[l]
+        return
 
-#        for x_j, y_j in mini_batch:
-#            del_weights, del_biases = self.backpropagate(x_j,y_j)
-#            sum_del_weights += del_weights
-#            sum_del_biases += del_biases
-#
-#        for k in range(len(self.sizes) - 1):
-#            del_weights
-#            self.weights[k] -= (eta/m) * sum_del_weights[k]
-#            self.biases[k] -= (eta/m) * sum_del_biases[k]
-#            print("{}".format(k))
+    def backpropagate(self, X, Y, m):
+        del_weights = np.zeros((m, len(self.weights)))
+        del_biases = np.zeros((m, len(self.biases)))
+        #weighted inputs into neuron
+        zs = []
+        #activated outputs from neuron 
+        activations = []
+        #set activation of 0th layer: it's the input!
+        A = X.T
+        #feed forward and store As, Zs
+        for l in range(0, len(self.sizes) - 1):
+            A,Z = self.forward_prop_layer(l, A)
+            activations.append(A)
+            zs.append(A)
+        #backward pass, beginning at last layer
+        error =  np.multiply(d_quadratic_cost(Y.T, activations[-1]), 
+                dsigmoid(zs[-1]))
+        for l in range(2, len(self.sizes)):
+            np.multiply((self.weights[-l+1].T @ error), dsigmoid(zs[-l]))
+            pdb.set_trace()
+        
+        return del_weights, del_biases 
+        #set 0th activation 
+
     def train(self, training_data, epochs, batch_size, learning_rate=0.03):
-        #training data list of pairs (x,y) where x is a training input, y the target output
+        #training_data is a tuple (X,Y) of inputs and observations
+        X,Y = training_data
+        if X.shape[0] != Y.shape[0]:
+            raise TrainingError("X and Y don't have matching shapes!")
+        #number observations in sample
+        n = X.shape[0]
         for i in range(epochs):
-            shuffle(training_data)
-            n = len(training_data)
+            np.random.seed(3 + i) 
+            np.random.shuffle(X)
+            np.random.shuffle(Y)
             for j in range(0, n, batch_size):
-                mini_batch = training_data[j: j + batch_size]
-                self.update_batch(mini_batch, learning_rate)
-                break       
+                X_batch = X[j: j + batch_size]
+                Y_batch = Y[j: j + batch_size]
+                self.update_batch(X_batch, Y_batch, learning_rate)
                 print("batch head: {}".format(j))
+                break
             #ToDo:
+
             #Print update on Epochs
             #i guess we could calculate 
 
-    def backpropagate(self, x, y):
-        del_weight = [np.zeros(W.shape) for W in self.weights]
-        del_bias = [np.zeros(b.shape) for b in self.biases]
-        #set 0th activation 
-        activated = x
-
-        return del_weight, del_bias
 
 
 
@@ -130,4 +144,9 @@ class NeuralNetwork:
    #     #assumes y is one-hot encoded
    #     pass
                             
-
+# replace this eventually with a general "apply classifier" function?
+#    def feed_forward(self, X):
+#        A = X
+#        for i in range(len(self.layers)):
+#            A, Z = self.forward_prop_layer(i, A)
+#        return A
