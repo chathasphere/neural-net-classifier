@@ -32,9 +32,9 @@ def test():
     X = data.data
     y = data.target
     train, test = transform_data(X,y)
-    nn = neural_net.NeuralNetwork([64,15,10])
+    nn = neural_net.NeuralNetwork([64,30,10], activations=["sigmoid", "sigmoid"])
     #let's give it a whirl
-    nn.train(train, epochs = 1, batch_size = 100)
+    nn.train(train, epochs = 30, batch_size = 50, learning_rate=3.0, test_data=test)
     
 
 if __name__ == "__main__":

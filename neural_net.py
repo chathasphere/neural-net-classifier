@@ -64,6 +64,12 @@ class NeuralNetwork:
         A = activate(Z)
         return A,Z
 
+    def feed_forward(self, X):
+        A = X
+        for l in range(0, len(self.sizes) - 1):
+            A,Z = self.forward_prop_layer(l,A)
+        return A
+
     def update_batch(self, X, Y, learning_rate):
         #X,Y are mini batches of training X and Y
         m = X.shape[0]
@@ -73,43 +79,57 @@ class NeuralNetwork:
         #loop through non-input layers
         # i am skeptical this is gonna work
         del_weights, del_biases = self.backpropagate(X,Y,m)
-        print(del_weights.shape, del_biases.shape)
         for l in range(len(self.sizes) - 1):
-            self.weights[l] -= (eta/m) * np.sum(del_weights, axis=0)[l]
-            self.biases[l] -= (eta/m) * np.sum(del_biases, axis=0)[l]
+            self.weights[l] -= eta * del_weights[-l-1]
+            self.biases[l] -= eta * del_biases[-l-1]
         return
 
     def backpropagate(self, X, Y, m):
-        del_weights = np.zeros((m, len(self.weights)))
-        del_biases = np.zeros((m, len(self.biases)))
+        del_weights = []
+        del_biases = []
         #weighted inputs into neuron
         zs = []
         #activated outputs from neuron 
-        activations = []
         #set activation of 0th layer: it's the input!
         A = X.T
+        activations = [A]
         #feed forward and store As, Zs
         for l in range(0, len(self.sizes) - 1):
             A,Z = self.forward_prop_layer(l, A)
             activations.append(A)
             zs.append(A)
         #backward pass, beginning at last layer
-        error =  np.multiply(d_quadratic_cost(Y.T, activations[-1]), 
+        #errors is an (n,m) array
+        #n number of neurons in the layer, m the number of samples in mini-batch
+        errors =  np.multiply(d_quadratic_cost(Y.T, activations[-1]), 
                 dsigmoid(zs[-1]))
+        #take the average of sample errors to get bias gradient
+        del_biases = [errors.sum(axis=1).reshape(-1,1) / m]
+        #multiply error by activations of previous layer
+        #then take average across m samples to get weight gradient
+        del_weights = [(errors @ activations[-2].T / m)]
         for l in range(2, len(self.sizes)):
-            np.multiply((self.weights[-l+1].T @ error), dsigmoid(zs[-l]))
-            pdb.set_trace()
+            errors = np.multiply((self.weights[-l+1].T @ errors), dsigmoid(zs[-l]))
+            del_bias = (errors.sum(axis=1).reshape(-1,1)) / m
+            del_biases.append(del_bias)
+            del_weight = (errors @ activations[-l-1].T) / m
+            del_weights.append(del_weight)
         
         return del_weights, del_biases 
         #set 0th activation 
 
-    def train(self, training_data, epochs, batch_size, learning_rate=0.03):
+    def train(self, training_data, epochs, batch_size,
+            learning_rate, test_data = None):
         #training_data is a tuple (X,Y) of inputs and observations
         X,Y = training_data
         if X.shape[0] != Y.shape[0]:
             raise TrainingError("X and Y don't have matching shapes!")
         #number observations in sample
         n = X.shape[0]
+#        #baseline performance:
+#        Y_hat = self.feed_forward(X.T)
+#        mse = np.sum(quadratic_cost(Y_hat, Y.T)) / n
+#        print("Baseline MSE loss: {0:.3f}".format(mse))
         for i in range(epochs):
             np.random.seed(3 + i) 
             np.random.shuffle(X)
@@ -118,14 +138,26 @@ class NeuralNetwork:
                 X_batch = X[j: j + batch_size]
                 Y_batch = Y[j: j + batch_size]
                 self.update_batch(X_batch, Y_batch, learning_rate)
-                print("batch head: {}".format(j))
-                break
-            #ToDo:
+            print("Epoch {} complete.".format(i))
+            if test_data is not None:
+                mse, n_correct = self.evaluate(test_data)
+                n_test = test_data[0].shape[0]
+                print("--> MSE: {:.2f}".format(mse))
+                print("--> Correct prediction: {} / {}".format(n_correct, n_test))
 
-            #Print update on Epochs
-            #i guess we could calculate 
+#            Y_hat = self.feed_forward(X.T)
+#            mse = np.sum(quadratic_cost(Y_hat, Y.T)) / n
+#            print("Epoch {0} complete. MSE loss: {1:.3f}".format(i, mse))
 
-
+    def evaluate(self, test_data):
+        X,Y = test_data
+        n = X.shape[0]
+        Y_hat = self.feed_forward(X.T).T
+        mse = np.sum(quadratic_cost(Y_hat, Y)) / n
+        prediction = np.argmax(Y_hat, axis=1)
+        labels = np.argmax(Y, axis=1)
+        n_correct = (prediction==labels).sum()
+        return mse, n_correct
 
 
    # def softmax(self, Z, stable=True):
@@ -145,8 +177,3 @@ class NeuralNetwork:
    #     pass
                             
 # replace this eventually with a general "apply classifier" function?
-#    def feed_forward(self, X):
-#        A = X
-#        for i in range(len(self.layers)):
-#            A, Z = self.forward_prop_layer(i, A)
-#        return A
