@@ -136,9 +136,10 @@ class NeuralNetwork:
                 self.update_batch(X_batch, Y_batch, learning_rate)
             if verbose:
                 print("Epoch {} complete.".format(i))
-            if test_data is not None:
+            if (test_data is not None) and not (i%100):
                 mse, n_correct = self.evaluate(test_data)
                 n_test = test_data[0].shape[0]
+                print("Evaluating Epoch {}".format(i))
                 print("--> MSE: {:.2f}".format(mse))
                 print("--> Correct prediction: {} / {}".format(n_correct, n_test))
 
