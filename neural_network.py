@@ -13,6 +13,7 @@ def relu(Z, derivative=False):
         Z_ = np.copy(Z)
         Z_[Z_ > 0] = 1
         Z_[Z_ <= 0] = 0
+        return Z_
     else:
         return np.maximum(0,Z)
 
@@ -107,7 +108,9 @@ class NeuralNetwork:
         del_weights = [(errors @ activations[-2].T / m)]
         for l in range(2, len(self.sizes)):
             act_fn = self.activations[-l]
-            errors = (self.weights[-l+1].T @ errors) * act_fn(zs[-l], derivative = True)
+            activate = self.activation_functions[act_fn]
+            errors = (self.weights[-l+1].T @ errors) * \
+                    activate(zs[-l], derivative = True)
             del_bias = (errors.sum(axis=1).reshape(-1,1)) / m
             del_biases.append(del_bias)
             del_weight = (errors @ activations[-l-1].T) / m
@@ -116,10 +119,17 @@ class NeuralNetwork:
         return del_weights, del_biases 
 
     def train(self, training_data, epochs, learning_rate,
-            batch_size = -1, test_data = None, verbose=False):
+            batch_size = -1, test_data = None, evaluate_per=100):
         #training_data is a tuple (X,Y) of inputs and observations
         if training_data[0].shape[0] != training_data[1].shape[0]:
             raise TrainingError("X and Y have different sample sizes!")
+        elif training_data[0].shape[1] != self.sizes[0]:
+            raise TrainingError("{} feature(s) in inputs, expected {}"\
+                    .format(training_data[0].shape[1], self.sizes[0]))
+        elif training_data[1].shape[1] != self.sizes[-1]:
+            raise TrainingError("{} class(es) in outputs, expected{}"\
+                    .format(training_data[1].shape[1], self.sizes[-1]))
+
         #number observations in sample
         n = training_data[0].shape[0]
         if batch_size < 0:
@@ -134,14 +144,13 @@ class NeuralNetwork:
                 X_batch = X[j: j + batch_size]
                 Y_batch = Y[j: j + batch_size]
                 self.update_batch(X_batch, Y_batch, learning_rate)
-            if verbose:
-                print("Epoch {} complete.".format(i))
-            if (test_data is not None) and not (i%100):
+            if (test_data is not None) and not ((i+1) % evaluate_per):
                 mse, n_correct = self.evaluate(test_data)
                 n_test = test_data[0].shape[0]
-                print("Evaluating Epoch {}".format(i))
+                print("Evaluating Epoch {}".format(i+1))
                 print("--> MSE: {:.2f}".format(mse))
                 print("--> Correct prediction: {} / {}".format(n_correct, n_test))
+                print("----> {:.2f}%".format(100 * n_correct / n_test))
 
     def evaluate(self, test_data):
         X,Y = test_data
@@ -149,11 +158,14 @@ class NeuralNetwork:
         Y_hat = self.feed_forward(X.T).T
         mse = np.sum(quadratic_cost(Y_hat, Y)) / n
         prediction = Y_hat.copy()
-        prediction[prediction > 0.5] = 1
-        prediction[prediction <= 0.5] = 0
         labels = Y
-        #prediction = np.argmax(Y_hat, axis=1)
-        #labels = np.argmax(Y, axis=1)
+        #single class classification:
+        if labels.shape[1] == 1:
+            prediction[prediction > 0.5] = 1
+            prediction[prediction <= 0.5] = 0
+        else:
+            prediction = np.argmax(Y_hat, axis=1)
+            labels = np.argmax(Y, axis=1)    
         n_correct = (prediction==labels).sum()
         return mse, n_correct
 
