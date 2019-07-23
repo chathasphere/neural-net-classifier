@@ -1,8 +1,8 @@
 import numpy as np
-from .functions import sigmoid, relu, quadratic_cost
+from .helpers import sigmoid, relu, CrossEntropyCost
 
 class TrainingError(Exception):
-    pass
+    pas
 
 def quadratic_cost(y, y_hat, derivative=False):
     #calculate squared error for a single observation (y) and prediction (y_hat)
@@ -14,11 +14,11 @@ def quadratic_cost(y, y_hat, derivative=False):
 class NeuralNetwork:
     activation_functions = {'relu': relu, 'sigmoid': sigmoid}
 
-    def __init__(self, sizes, activations=None):
+    def __init__(self, sizes, activations=None, cost=CrossEntropyCost):
         self.sizes = sizes
         self.weights = self.init_weights()
         if activations is None:
-            self.activations = ["sigmoid" for i in range(1, len(sizes))] + ["sigmoid"]
+            self.activations = ["relu" for i in range(1, len(sizes))] + ["sigmoid"]
         else:
             self.activations = activations
         #no bias needed for first layer
@@ -81,6 +81,8 @@ class NeuralNetwork:
         #backward pass
         #errors is an (n,m) array for each layer
         #n number of neurons in the layer, m the number of samples in mini-batch
+        #to do: refactor this one
+
         d_cost = quadratic_cost(Y.T, activations[-1], derivative = True)
         errors = d_cost * sigmoid(zs[-1], derivative = True)
 
@@ -140,8 +142,8 @@ class NeuralNetwork:
         X,Y = test_data
         n = X.shape[0]
         Y_hat = self.feed_forward(X.T).T
-        mse = np.sum(np.linalg.norm(quadratic_cost(Y_hat, Y), axis=1)) / n
-        mse = np.sum(quadratic_cost(Y_hat, Y)) / n
+	#average Euclidean (L2) norm of squared residuals
+	mse = np.sum(np.linalg.norm(quadratic_cost(Y_hat, Y), axis=1)) / n
         prediction = Y_hat.copy()
         labels = Y
         #single class classification:
