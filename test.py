@@ -1,7 +1,7 @@
 import math
 from sklearn import datasets
 import numpy as np
-from neural_network import NeuralNetwork
+from neural_network.neural_network1 import NeuralNetwork
 
 def one_hot(target, n_classes):
     n_samples = target.shape[0]
