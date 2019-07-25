@@ -1,6 +1,8 @@
 import math
 from sklearn import datasets
 import numpy as np
+import sys
+sys.path.append("..")
 from neural_network.neural_network1 import NeuralNetwork
 
 def one_hot(target, n_classes):
@@ -32,7 +34,7 @@ def test():
     X = data.data
     y = data.target
     train, test = transform_data(X,y)
-    digits_nn = NeuralNetwork([64,15,10], activations=["sigmoid", "sigmoid"])
+    digits_nn = NeuralNetwork([64,15,10])
     #let's give it a whirl
     digits_nn.train(train, epochs = 300, batch_size = 50,
             learning_rate = 0.5, test_data = test)

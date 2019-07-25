@@ -16,35 +16,12 @@ def relu(Z, derivative=False):
     else:
         return np.maximum(0,Z)
 
-class QuadraticCost():
-    #AKA L2 Error, Mean Square Error
-    @staticmethod
-
-    def cost(Y, Y_hat):
-        #Y is the matrix of labels
-        #Y_hat is the prediction, or last activation layer
-        #returns a scalar value, Mean Square Error
-        residuals = 0.5 * (Y - Y_hat)**2
-        n_samples = Y.shape[0]
-        return np.sum(np.linalg.norm(residuals, axis=0)) / n
-    
-    @staticmethod
-    def errors(Y, Y_hat, Z):
-        #Y and Y_hat as above.
-        #Z is the weighted input into the last activation layer
-        return (Y_hat - Y) * sigmoid(Z, derivative = True)
-
-class CrossEntropyCost()
-    # Binary cross entropy 
-
-    @staticmethod
-    def cost(Y, Y_hat):
-        cross_entropies =  -(Y @ np.log(Y_hat).T + (1 - Y) @ np.log(1 - Y_hat.T))
-        n_samples = Y.shape[0]
-        return np.sum(np.nan_to_num(cross_entropies)) / n
-
-    @staticmethod
-    def errors(Y, Y_hat, Z):
-        return Y_hat - Y
-
-
+def softmax(Z, derivative=False):
+    #assumes Z is a matrix (p, n) where
+    #p is the number of (output) neurons/classes, n is the number of samples
+    if derivative:
+        pass
+    else:
+        exps = np.exp(Z) - np.max(Z, axis=0)
+        return exps / np.sum(exps, axis=0)
+#ToDo: write a softmax function?
