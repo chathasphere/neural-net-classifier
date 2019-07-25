@@ -35,7 +35,7 @@ class NeuralNetwork:
         #A the "activated" matrix input from previous layer
         W = self.weights[layer_number]
         b = self.biases[layer_number]
-        Z = np.dot(W, A) + b
+        Z = W @ A + b
         act_fn = self.activations[layer_number]
         activate = NeuralNetwork.activation_functions[act_fn]
         A = activate(Z)
@@ -47,16 +47,19 @@ class NeuralNetwork:
             A,Z = self.forward_prop_layer(l,A)
         return A
 
-    def update_batch(self, X, Y, learning_rate):
+    def update_batch(self, X, Y, learning_rate, regularization):
         #X,Y are mini batches of training X and Y
         m = X.shape[0]
         eta = learning_rate
+        lmbda = regularization
         #Sum the cost function gradient (w.r.t weights, biases) for each 
         #data point in the mini-batch
         del_weights, del_biases = self.backpropagate(X,Y,m)
         for l in range(len(self.sizes) - 1):
-            self.weights[l] -= eta * del_weights[-l-1]
-            self.biases[l] -= eta * del_biases[-l-1]
+            #regularize weights
+            self.weights[l] = (1 - eta*lmbda) * self.weights[l] - \
+                    (eta * del_weights[-l-1])
+            self.biases[l] = self.biases[l] - (eta * del_biases[-l-1])
         return
 
     def backpropagate(self, X, Y, m):
@@ -135,20 +138,20 @@ class NeuralNetwork:
             for j in range(0, n, batch_size):
                 X_batch = X[j: j + batch_size]
                 Y_batch = Y[j: j + batch_size]
-                self.update_batch(X_batch, Y_batch, learning_rate)
+                self.update_batch(X_batch, Y_batch, learning_rate, regularization)
             verbose = False
             if not((i+1) % epochs_per_print):
                 print("Epoch {} complete".format(i+1))
                 verbose = True
             #measure performance on training data
-            a,b = self.evaluate(data = (X,Y), training=True,
+            a,b = self.evaluate(data = (X,Y), training=True, lmbda = regularization, 
                     get_loss = monitor_training[0], get_accuracy = monitor_training[1],
                     verbose = verbose)
             training_loss.extend(a)
             training_accuracy.extend(b) 
             #measure performance on evaluation data
             c,d = self.evaluate(data = evaluation_data, training=False,
-                    get_loss = monitor_evaluation[0], 
+                    lmbda = regularization, get_loss = monitor_evaluation[0], 
                     get_accuracy = monitor_evaluation[1], verbose = verbose)
             evaluation_loss.extend(c)
             evaluation_accuracy.extend(d)
@@ -158,7 +161,7 @@ class NeuralNetwork:
                 "evaluation_accuracy": evaluation_accuracy}
 
 
-    def evaluate(self, data, training, get_loss, get_accuracy, verbose):
+    def evaluate(self, data, training, get_loss, get_accuracy, verbose, lmbda):
         loss, accuracy = [], []
         if not (get_loss or get_accuracy):
             #optimized for speed
@@ -168,7 +171,10 @@ class NeuralNetwork:
         n = X.shape[0]
         Y_hat = self.feed_forward(X.T).T
         if get_loss:
-            loss = [self.cost.loss(Y, Y_hat)]
+            c0 = self.cost.loss(Y, Y_hat)
+            c1 = 0.5 * lmbda * \
+                     sum([np.square(w).sum() for w in self.weights]) / n
+            loss = [c0 + c1]
             if verbose:
                 print("Loss on {} data: {:.2f}".format(dataset, loss[0]))
         if get_accuracy:

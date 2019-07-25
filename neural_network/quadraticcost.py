@@ -7,9 +7,9 @@ def loss(Y, Y_hat):
     #Y is the matrix of labels
     #Y_hat is the prediction, or last activation layer
     #returns a scalar value, Mean Square Error
-    residuals = 0.5 * (Y - Y_hat)**2
     n_samples = Y.shape[0]
-    return np.sum(np.linalg.norm(residuals, axis=0)) / n_samples
+    residuals = (Y - Y_hat)
+    return 0.5 * np.sum(np.linalg.norm(residuals, axis=0)**2) / n_samples
 
 def errors(Y, Y_hat, Z):
     #Y and Y_hat as above.

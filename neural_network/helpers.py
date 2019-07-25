@@ -5,7 +5,7 @@ def sigmoid(Z, derivative=False):
         sig = sigmoid(Z)
         return sig*(1-sig)
     else:
-        return 1/(1 + np.exp(-Z))
+        return 1. / (1. + np.exp(-Z))
 
 def relu(Z, derivative=False):
     if derivative:

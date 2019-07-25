@@ -36,8 +36,8 @@ def test():
     train, test = transform_data(X,y)
     digits_nn = NeuralNetwork([64,15,10])
     #let's give it a whirl
-    digits_nn.train(train, epochs = 300, batch_size = 50,
-            learning_rate = 0.5, test_data = test)
+    digits_nn.train(train, epochs = 100, batch_size = 50,
+            learning_rate = 0.5, test_data = test, evaluate_per = 10)
     
 
 if __name__ == "__main__":

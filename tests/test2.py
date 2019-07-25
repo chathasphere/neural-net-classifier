@@ -37,9 +37,9 @@ def test():
     train, test = transform_data(X,y)
     digits_nn = NeuralNetwork([64,15,10], activations=["sigmoid", "sigmoid"])
     #let's give it a whirl
-    n_epochs = 100
-    evaluation = digits_nn.train(train, epochs = n_epochs, regularization = 0.05, 
-            batch_size = 50, learning_rate = .8, evaluation_data = test,
+    n_epochs = 300
+    evaluation = digits_nn.train(train, epochs = n_epochs, regularization = 0.0001,
+            batch_size = 50, learning_rate = .3, evaluation_data = test,
             epochs_per_print = 10,
             monitor_training = (True, False),
             monitor_evaluation = (False, True))
