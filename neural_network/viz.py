@@ -17,6 +17,22 @@ def loss_over_epochs(training_loss, evaluation_loss = None):
         y = evaluation_loss
     plt.show()
 
+def accuracy_over_epochs(training_acc, evaluation_acc = None):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_xlabel("Training Epochs")
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(bottom = 0)
+    #training data
+    x = np.arange(1, len(training_acc)+1)
+    y = training_acc
+    training_line = plt.plot(x, y)
+    #evaluation data
+    if evaluation_acc is not None:
+        x - np.arange(1, len(evaluation_acc)+1)
+        y = evaluation_acc
+    plt.show()
+
 def compare_losses(losses, labels):
     fig = plt.figure()
     ax = fig.add_subplot(111)
