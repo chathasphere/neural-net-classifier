@@ -5,7 +5,7 @@ def sigmoid(Z, derivative=False):
         sig = sigmoid(Z)
         return sig*(1-sig)
     else:
-        return 1/(1 + np.exp(-Z))
+        return 1. / (1. + np.exp(-Z))
 
 def relu(Z, derivative=False):
     if derivative:
@@ -16,10 +16,12 @@ def relu(Z, derivative=False):
     else:
         return np.maximum(0,Z)
 
-def quadratic_cost(y, y_hat, derivative=False):
-    #calculate squared error for a single observation (y) and prediction (y_hat)
+def softmax(Z, derivative=False):
+    #assumes Z is a matrix (p, n) where
+    #p is the number of (output) neurons/classes, n is the number of samples
     if derivative:
-        return (y_hat - y)
+        pass
     else:
-        return 0.5 * (y - y_hat)**2
-
+        exps = np.exp(Z) - np.max(Z, axis=0)
+        return exps / np.sum(exps, axis=0)
+#ToDo: write a softmax function?

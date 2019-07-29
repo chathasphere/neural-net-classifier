@@ -1,19 +1,21 @@
 import numpy as np
-from .functions import sigmoid, relu, quadratic_cost
+from .helpers import sigmoid
 
 class TrainingError(Exception):
     pass
 
-class NeuralNetwork:
-    activation_functions = {'relu': relu, 'sigmoid': sigmoid}
+def quadratic_cost(y, y_hat, derivative=False):
+    #calculate squared error for a single observation (y) and prediction (y_hat)
+    if derivative:
+        return (y_hat - y)
+    else:
+        return 0.5 * (y - y_hat)**2
 
-    def __init__(self, sizes, activations=None):
+class NeuralNetwork:
+
+    def __init__(self, sizes):
         self.sizes = sizes
         self.weights = self.init_weights()
-        if activations is None:
-            self.activations = ["sigmoid" for i in range(1, len(sizes))] + ["sigmoid"]
-        else:
-            self.activations = activations
         #no bias needed for first layer
         self.biases = [np.random.randn(s,1) * 0.1 for s in sizes[1:]]
 
@@ -33,9 +35,7 @@ class NeuralNetwork:
         W = self.weights[layer_number]
         b = self.biases[layer_number]
         Z = np.dot(W, A) + b
-        act_fn = self.activations[layer_number]
-        activate = self.activation_functions[act_fn]
-        A = activate(Z)
+        A = sigmoid(Z)
         return A,Z
 
     def feed_forward(self, X):
@@ -84,10 +84,8 @@ class NeuralNetwork:
         #then take average across m samples to get weight gradient
         del_weights = [(errors @ activations[-2].T / m)]
         for l in range(2, len(self.sizes)):
-            act_fn = self.activations[-l]
-            activate = self.activation_functions[act_fn]
             errors = (self.weights[-l+1].T @ errors) * \
-                    activate(zs[-l], derivative = True)
+                    sigmoid(zs[-l], derivative = True)
             del_bias = (errors.sum(axis=1).reshape(-1,1)) / m
             del_biases.append(del_bias)
             del_weight = (errors @ activations[-l-1].T) / m
@@ -133,6 +131,7 @@ class NeuralNetwork:
         X,Y = test_data
         n = X.shape[0]
         Y_hat = self.feed_forward(X.T).T
+        mse = np.sum(np.linalg.norm(quadratic_cost(Y_hat, Y), axis=1)) / n
         mse = np.sum(quadratic_cost(Y_hat, Y)) / n
         prediction = Y_hat.copy()
         labels = Y
